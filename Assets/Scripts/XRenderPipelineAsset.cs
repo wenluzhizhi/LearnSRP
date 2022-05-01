@@ -13,6 +13,15 @@ public class XRenderPipelineAsset : RenderPipelineAsset
 
 public class XRenderPipeline: RenderPipeline {
     protected override void Render(ScriptableRenderContext context, Camera[] camears) {
+
+
+        CommandBuffer cmd = new CommandBuffer();
+        cmd.ClearRenderTarget(true, true, Color.black);
+        context.ExecuteCommandBuffer(cmd);
+        cmd.Release();
+
+
+
          foreach(var camera in camears) {
              RenderPerCamera(context, camera);
 
