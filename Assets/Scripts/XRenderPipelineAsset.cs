@@ -33,15 +33,17 @@ public class XRenderPipeline: RenderPipeline {
          context.Submit();
     }
 
-    private ShaderTagId _shaderTag = new ShaderTagId("ExampleLightModeTag");
+    private ShaderTagId _shaderTag = new ShaderTagId("XForwardBase");
 
-
+    private LightConfigurator _lightConfigurator = new LightConfigurator();
 
     private void RenderPerCamera(ScriptableRenderContext context, Camera camera) {
         context.SetupCameraProperties(camera);
         //对场景进行裁剪
         camera.TryGetCullingParameters(out var cullingParams);
         var cullingResults = context.Cull(ref cullingParams);
+
+        _lightConfigurator.SetupShaderLightingParams(context, ref cullingResults);
 
         //相关参数，用来计算物体渲染时的排序
         var sortingSetting = new SortingSettings(camera);
