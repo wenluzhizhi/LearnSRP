@@ -20,19 +20,10 @@ Shader "Custom/BlinnPongSpecular"
             #pragma fragment PassFragment
             #pragma enable_cbuffer
             #include "UnityCG.cginc"
-            //#include "../ShaderLibrary/Light.hlsl"
+            #include "./ShaderLibrary/Light.hlsl"
+            #include "./ShaderLibrary/Shadow.hlsl"
 
-
-
-            half4 _XAmbientColor;
-            //主灯光方向
-            float4 _XMainLightDirection;
-            //主灯光颜色
-            half4 _XMainLightColor;
-
-
-  
-
+            //UNITY_DECLARE_TEX2D(_XMainShadowMap);
             struct Attributes
             {
                 float4 positionOS   : POSITION;
@@ -54,29 +45,9 @@ Shader "Custom/BlinnPongSpecular"
             
             float _Shininess;
             float4 _MainTex_ST;
-
-            half LambertDiffuse(float3 normal){
-              //return max(0,dot(normal,_XMainLightDirection.xyz));
-              float dotNL = dot(normal, _XMainLightDirection.xyz);
-              dotNL = dotNL * 0.5 + 0.5;
-              return dotNL;
-            };
-
-            float BilinnPhongSpecular(float3 viewDir, float3 normal, float shiness) {
-                float3 halfDir = normalize((viewDir  + _XMainLightDirection));
-                float dotHN = pow( max(0, dot(halfDir, normal)), shiness);
-
-                return dotHN;
-            }
-
-
-           half4 BlinnPhongLight(float3 positionWS, float3 normalWS, float shiness, half diffuseColor, half4 specularColor)
-           {
-               float3 viewDir = normalize( _WorldSpaceCameraPos - positionWS);
-               return BilinnPhongSpecular(viewDir, normalWS, shiness) * specularColor;
-           }
-        
-
+            float4 _SpecularColor;
+ 
+           
             Varyings PassVertex(Attributes input)
             {
                 Varyings output;
@@ -94,9 +65,31 @@ Shader "Custom/BlinnPongSpecular"
                 float3 positionWS = input.positionWS;
                 float3 normalWS = input.normalWS;
                 diffuseColor.xyz = diffuseColor.xyz * LambertDiffuse(normalWS);
-                half4 color = BlinnPhongLight(positionWS, normalWS, _Shininess, diffuseColor, float4(1.0, 0, 0, 1.0));
-                return color + diffuseColor + _XAmbientColor;
+                half4 color = BlinnPongLight(positionWS, normalWS, _Shininess, diffuseColor, _SpecularColor);
+                color += _XAmbientColor;
+                float shadow = GetMainLightShadowAtten(positionWS,normalWS);
+                return color*(1.0 - shadow);
+                //return diffusec
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+           Name "ShadowCaster"
+           Tags{"LightMode" = "ShadowCaster"}
+
+           ZWrite On
+           ZTest LEqual
+           ColorMask 0
+           Cull Back
+
+           HLSLPROGRAM
+           #include "UnityCG.cginc"
+           #include "./ShaderLibrary/Shadow.hlsl"
+            #pragma vertex ShadowCasterVertex
+            #pragma fragment ShadowCasterFragment
+
             ENDHLSL
         }
     }

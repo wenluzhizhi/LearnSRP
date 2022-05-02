@@ -55,7 +55,7 @@ public class LightConfigurator
     private static int GetMainLightIndex(NativeArray<VisibleLight> lights)
     {
         Light mainLight = null;
-        var mainLightIndex = -1;
+        int _mainLightIndex = -1;
         var index = 0;
         foreach (var light in lights)
         {
@@ -69,27 +69,27 @@ public class LightConfigurator
                 if (!mainLight)
                 {
                     mainLight = lightComp;
-                    mainLightIndex = index;
+                    _mainLightIndex = index;
                 }
                 else
                 {
                     if (CompareLight(mainLight, lightComp) > 0)
                     {
                         mainLight = lightComp;
-                        mainLightIndex = index;
+                        _mainLightIndex = index;
                     }
                 }
             }
             index++;
         }
-        return mainLightIndex;
+        return _mainLightIndex;
     }
 
 
-    public void SetupShaderLightingParams(ScriptableRenderContext context, ref CullingResults cullingResults)
+    public LightData SetupShaderLightingParams(ScriptableRenderContext context, ref CullingResults cullingResults)
     {
         var visibleLights = cullingResults.visibleLights;
-        var mainLightIndex = GetMainLightIndex(visibleLights);
+        int mainLightIndex = GetMainLightIndex(visibleLights);
         if (mainLightIndex >= 0)
         {
             var mainLight = visibleLights[mainLightIndex];
@@ -102,14 +102,35 @@ public class LightConfigurator
             Shader.SetGlobalColor(ShaderProperties.MainLightColor, new Color(0, 0, 0, 0));
         }
         Shader.SetGlobalColor(ShaderProperties.AmbientColor, RenderSettings.ambientLight);
+        return new LightData()
+        {
+            mainLightIndex = mainLightIndex,
+            mainLight = visibleLights[mainLightIndex],
+        };
     }
 
 
-    public class ShaderProperties
-    {
+    
+}
 
-        public static int MainLightDirection = Shader.PropertyToID("_XMainLightDirection");
-        public static int MainLightColor = Shader.PropertyToID("_XMainLightColor");
-        public static int AmbientColor = Shader.PropertyToID("_XAmbientColor");
-    }
+public class ShaderProperties
+{
+
+    public static int MainLightDirection = Shader.PropertyToID("_XMainLightDirection");
+    public static int MainLightColor = Shader.PropertyToID("_XMainLightColor");
+    public static int AmbientColor = Shader.PropertyToID("_XAmbientColor");
+
+    public static readonly int MainLightMatrixWorldToShadowSpace = Shader.PropertyToID("_XMainLightMatrixWorldToShadowMap");
+
+    //x为depthBias,y为normalBias,z为shadowStrength
+    public static readonly int ShadowParams = Shader.PropertyToID("_ShadowParams");
+    public static readonly int MainShadowMap = Shader.PropertyToID("_XMainShadowMap");
+}
+
+
+
+public struct LightData
+{
+    public int mainLightIndex;
+    public VisibleLight mainLight;
 }
